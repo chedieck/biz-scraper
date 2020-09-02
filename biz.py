@@ -117,8 +117,10 @@ def scrap_all():
     # save on db
     print('saving data...')
     try:
-        history = pd.read_csv('.cache/historical_data.csv')
+        history = pd.read_csv('.cache/historical_data.csv',
+                              index_col='timestamp')
     except FileNotFoundError:
+        print('creating db at .cache/historical_data.csv')
         history = pd.DataFrame(columns=['timestamp'])
         history = history.set_index('timestamp')
 
@@ -126,7 +128,7 @@ def scrap_all():
     ts = now.timestamp()
     relevant_dict = {k: v for (k, v) in COUNTING_DICT.items() if v > 0}
     row = pd.Series(relevant_dict, name=ts)
-    history = history.append(row, ignore_index=True)
+    history = history.append(row)
     history.to_csv('.cache/historical_data.csv')
 
     print('done.')
@@ -137,8 +139,9 @@ def show_trend(args, D=COUNTING_DICT):
     cached = args.cached
     if cached:
         print('using cache...')
-        with open('.cache/counting_dict.json', 'r') as f:
-            D = json.load(f)
+        df = pd.read_csv('.cache/historical_data.csv')
+        raw_dict = df.tail(1).to_dict(orient='list')
+        D = {k: v[0] for (k, v) in raw_dict.items()}
 
     L = len(D.keys())
     assert n < L, f"n must be smaller than {L}"
