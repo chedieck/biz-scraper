@@ -102,19 +102,30 @@ def scrap_all():
         parse_string(teaser + ' ' + sub)
         process_threads.append(threading.Thread(target=scrap_thread,
                                                 args=(thread_id,)))
+
+    # run scraping threads
     print('sending requests...')
     for t in process_threads:
         t.start()
-
     print('waiting for responses...')
     for t in process_threads:
         t.join()
+    print('saving on cache...')
+    with open('.cache/counting_dict.json', 'w') as f:
+        json.dump(COUNTING_DICT, f)
     print('done.')
 
 
-def show_trend(n=10):
+def show_trend(args, D=COUNTING_DICT):
+    n = args.number
+    cached = args.cached
+    if cached:
+        print('using cache...')
+        with open('.cache/counting_dict.json', 'r') as f:
+            D = json.load(f)
+
     # show n most cited assets
-    sorted_items = sorted(COUNTING_DICT.items(), key=lambda x: x[1], reverse=1)
+    sorted_items = sorted(D.items(), key=lambda x: x[1], reverse=1)
     for i, (k, v) in enumerate(sorted_items):
         if i >= n:
             return
@@ -122,27 +133,29 @@ def show_trend(n=10):
 
 
 if __name__ == '__main__':
-    # load json
-    with open('cmc_by_symbol.json', 'r') as f:
-        cmc_json = json.load(f)
-
     # parse args
-    parser = argparse.ArgumentParser(description="/biz/ scrapper.")
+    parser = argparse.ArgumentParser(description="/biz/ scraper.")
     parser.add_argument('-n', '--number', type=int,
-                        help='get n most mentioned tokens'
-                        ', default is 10')
+                        help='get n most mentioned tokens, default is 10')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='print which assets are being ignored')
 
     parser.add_argument('-c', '--cached', action='store_true',
                         help='used cached data')
     args = parser.parse_args()
-    if args.number == None:
+
+    # run scraper or not, if cached
+    if args.number is None:
         args.number = 10
-    if args.verbose:
-        passlist_info(cmc_json)
+    if not args.cached:
+        # load json
+        with open('cmc_by_symbol.json', 'r') as f:
+            cmc_json = json.load(f)
+        if args.verbose:  # print passlist info
+            passlist_info(cmc_json)
+        init_dict(cmc_json)
+        # run scraping
+        scrap_all()
     
-    # run scrapping
-    init_dict(cmc_json)
-    scrap_all()
-    show_trend(args.number)
+    # show results
+    show_trend(args)
