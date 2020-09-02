@@ -27,6 +27,7 @@ passlist = {
             'THE',
             'YOU',
             'SENT',
+            'LOL',
             'BUY',
             'FOR',
             'GET',
@@ -39,13 +40,14 @@ passlist = {
 #################################################################
 
 
-def init_dict():
-    with open('cmc_listing', 'r') as f:
-        cmc_json = json.load(f)
-        cmc_list = cmc_json['data']
+def passlist_info(cmc_json):
+    for symb in passlist:
+        print(f"{symb:<7} ranked {cmc_json[symb]['cmc_rank']:<4} ignored...")
 
-    for asset in cmc_list:
-        COUNTING_DICT[asset['symbol']] = 0
+
+def init_dict(cmc_json):
+    for symb in cmc_json.keys():
+        COUNTING_DICT[symb] = 0
 
 
 def count_word(word):
@@ -109,23 +111,38 @@ def scrap_all():
         t.join()
     print('done.')
 
+
 def show_trend(n=10):
     # show n most cited assets
     sorted_items = sorted(COUNTING_DICT.items(), key=lambda x: x[1], reverse=1)
     for i, (k, v) in enumerate(sorted_items):
         if i >= n:
             return
-        print(f"{k + ' ':-<20}: {v}")
+        print(f"{k + ' ':-<20} {v}")
 
 
 if __name__ == '__main__':
+    # load json
+    with open('cmc_by_symbol.json', 'r') as f:
+        cmc_json = json.load(f)
+
+    # parse args
     parser = argparse.ArgumentParser(description="/biz/ scrapper.")
     parser.add_argument('-n', '--number', type=int,
                         help='get n most mentioned tokens'
-                        ', default is 30')
+                        ', default is 10')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='print which assets are being ignored')
+
+    parser.add_argument('-c', '--cached', action='store_true',
+                        help='used cached data')
     args = parser.parse_args()
     if args.number == None:
-        args.number = 30
-    init_dict()
+        args.number = 10
+    if args.verbose:
+        passlist_info(cmc_json)
+    
+    # run scrapping
+    init_dict(cmc_json)
     scrap_all()
     show_trend(args.number)
