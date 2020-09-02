@@ -1,75 +1,68 @@
+#!/bin/python3
+
 from bs4 import BeautifulSoup
 import requests
 import json
 import html
 from string import punctuation
-from tqdm import tqdm
+import argparse
+import threading
 
+
+# It's not very pythonic to have functions
+# modyfing global arguments and returing None.
+# However, I decided to structure the following
+# code this way; for I figured it would make it
+# more readable.
+
+################################################################
 # global variables:
 COUNTING_DICT = {}
 CLEAR_TRANS = str.maketrans(punctuation, ' ' * len(punctuation))
+# shitcoins named after common capsed words that shall
+# not be counted.
 passlist = {
             'A',
-            'AM',
-            'ALL',
-            'AND',
-            'FUCKING',
-            'ARE',
-            'ANON',
-            'BUY',
-            'DO',
-            'DOING',
-            'END',
-            'EVERY',
-            'EOY',
-            'FOR',
-            'FUCK',
-            'FUCKING',
-            'GET',
-            'GOING',
-            'MY',
-            'MAKE',
-            'NOW',
-            'NOT',
-            'ME',
-            'I',
-            'IN',
-            'IS',
             'IT',
-            'JUST',
-            'OF',
-            'SELL',
-            'SHOULD',
-            'TO',
             'THE',
-            'THIS',
-            'UK',
-            'UP',
-            'US',
             'YOU',
-            'WILL',
-            'WHAT',
+            'SENT',
+            'BUY',
+            'FOR',
+            'GET',
+            'ME',
+            'UP',
+            'GO',
             }
+# the most popular of those coins, at the time I am writing this,
+# is FOR, at position 296 in CMC.
+#################################################################
 
 
-def count_word(word, seen_words, D=COUNTING_DICT):
+def init_dict():
+    with open('cmc_listing', 'r') as f:
+        cmc_json = json.load(f)
+        cmc_list = cmc_json['data']
+
+    for asset in cmc_list:
+        COUNTING_DICT[asset['symbol']] = 0
+
+
+def count_word(word):
     clean_word = word.translate(CLEAR_TRANS).strip()
-    if clean_word.isupper() and clean_word not in seen_words.union(passlist):
-        if clean_word in D.keys():
-            D[clean_word] += 1
-        else:
-            D[clean_word] = 1
-        seen_words.add(clean_word)
-    return seen_words
+    if clean_word in COUNTING_DICT and clean_word not in passlist:
+        COUNTING_DICT[clean_word] += 1
 
 
-def parse_string(_string, D=COUNTING_DICT):
-    seen_words = set()  # avoids spam/repetition
-    for word in _string.split():
-        seen_words = count_word(word, seen_words)
+def parse_string(_string):
+    clear_string = _string.translate(CLEAR_TRANS)
+    # to avoids spam/repetition
+    unique_words = list(set(clear_string.split()))
+    for word in unique_words:
+        count_word(word)
 
 
-def scrap_thread(thread_id, D=COUNTING_DICT):
+def scrap_thread(thread_id):
     thread_url = 'https://boards.4channel.org/biz/thread/' + thread_id
     page = requests.get(thread_url)
     soup = BeautifulSoup(page.content, 'html.parser')
@@ -100,13 +93,21 @@ def scrap_all():
 
     # parse json
     threads = catalog_json['threads']
-    for thread_id, content in tqdm(threads.items()):
+    process_threads = []
+    for thread_id, content in threads.items():
         sub = html.unescape(content['sub'])
         teaser = html.unescape(content['teaser'])
-        print (f"At thread {thread_id}, sub: {sub}")
-        parse_string(teaser + ' ' + sub)  # ignore repeated content
-        scrap_thread(thread_id)
+        parse_string(teaser + ' ' + sub)
+        process_threads.append(threading.Thread(target=scrap_thread,
+                                                args=(thread_id,)))
+    print('sending requests...')
+    for t in process_threads:
+        t.start()
 
+    print('waiting for responses...')
+    for t in process_threads:
+        t.join()
+    print('done.')
 
 def show_trend(n=10):
     # show n most cited assets
@@ -114,11 +115,17 @@ def show_trend(n=10):
     for i, (k, v) in enumerate(sorted_items):
         if i >= n:
             return
-        print(f"{k}: {v}")
+        print(f"{k + ' ':-<20}: {v}")
 
 
-
-
-
-
-
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="/biz/ scrapper.")
+    parser.add_argument('-n', '--number', type=int,
+                        help='get n most mentioned tokens'
+                        ', default is 30')
+    args = parser.parse_args()
+    if args.number == None:
+        args.number = 30
+    init_dict()
+    scrap_all()
+    show_trend(args.number)
