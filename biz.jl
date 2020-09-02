@@ -1,15 +1,12 @@
-#!/bin/python3
-
-from bs4 import BeautifulSoup
-import requests
-import sqlite3
-import json
-import html
-from string import punctuation
-import argparse
-import threading
-import pandas as pd
-from datetime import datetime
+# from bs4 import BeautifulSoup
+# import requests
+# import sqlite3
+# import json
+# import html
+# from string import punctuation
+# import argparse
+# import threading
+# from datetime import datetime
 
 
 # It's not very pythonic to have functions
@@ -19,65 +16,67 @@ from datetime import datetime
 # more readable.
 
 ################################################################
-# global variables:
-COUNTING_DICT = {}
-CLEAR_TRANS = str.maketrans(punctuation, ' ' * len(punctuation))
+# global variables
+COUNTING_DICT = Dict()
+# ---> CLEAR_TRANS = str.maketrans(punctuation, ' ' * len(punctuation))
 # shitcoins named after common capsed words that shall
 # not be counted.
-passlist = {
-            'A',
-            'IT',
-            'THE',
-            'YOU',
-            'SENT',
-            'LOL',
-            'BUY',
-            'FOR',
-            'GET',
-            'ME',
-            'UP',
-            'GO',
-            }
+
+passlist = ["A"
+            "IT"
+            "THE"
+            "YOU"
+            "SENT"
+            "LOL"
+            "BUY"
+            "FOR"
+            "GET"
+            "ME"
+            "UP"
+            "GO"
+           ]
+
 # the most popular of those coins, at the time I am writing this,
 # is FOR, at position 296 in CMC.
 #################################################################
 
 
-def passlist_info(cmc_json):
-    for symb in passlist:
-        print(f"{symb:<7} ranked {cmc_json[symb]['cmc_rank']:<4} ignored...")
+function passlist_info(cmc_json)
+    for symb in passlist
+        printf("%{symb:<7} ranked {cmc_json[symb]['cmc_rank']:<4} ignored...")
 
 
-def init_dict(cmc_json):
-    for symb in cmc_json.keys():
+function init_dict(cmc_json)
+    for symb in cmc_json.keys()
         COUNTING_DICT[symb] = 0
 
 
-def count_word(word):
+function count_word(word)
     clean_word = word.translate(CLEAR_TRANS).strip()
-    if clean_word in COUNTING_DICT and clean_word not in passlist:
+    if clean_word in COUNTING_DICT and clean_word not in passlist
         COUNTING_DICT[clean_word] += 1
 
+exit()
 
-def parse_string(_string):
+function parse_string(_string)
     clear_string = _string.translate(CLEAR_TRANS)
     # to avoids spam/repetition
     unique_words = list(set(clear_string.split()))
-    for word in unique_words:
+    for word in unique_words
         count_word(word)
 
 
-def scrap_thread(thread_id):
+function scrap_thread(thread_id)
     thread_url = 'https://boards.4channel.org/biz/thread/' + thread_id
     page = requests.get(thread_url)
     soup = BeautifulSoup(page.content, 'html.parser')
     raw_posts = soup.findAll('blockquote', attrs={'class': 'postMessage'})[1:]
-    for raw_post in raw_posts:
+    for raw_post in raw_posts
         post = html.unescape(raw_post.get_text(' '))
         parse_string(post)
 
 
-def scrap_all():
+function scrap_all()
     # load url and BS it
     catalog_url = 'https://boards.4channel.org/biz/catalog'
     page = requests.get(catalog_url)
@@ -99,7 +98,7 @@ def scrap_all():
     # parse json
     threads = catalog_json['threads']
     process_threads = []
-    for thread_id, content in threads.items():
+    for thread_id, content in threads.items()
         sub = html.unescape(content['sub'])
         teaser = html.unescape(content['teaser'])
         parse_string(teaser + ' ' + sub)
@@ -108,49 +107,43 @@ def scrap_all():
 
     # run scraping threads
     print('sending requests...')
-    for t in process_threads:
+    for t in process_threads
         t.start()
     print('waiting for responses...')
-    for t in process_threads:
+    for t in process_threads
         t.join()
 
     # save on db
     print('saving data...')
-    try:
-        history = pd.read_csv('.cache/historical_data.csv')
-    except FileNotFoundError:
-        history = pd.DataFrame(columns=['timestamp'])
-        history = history.set_index('timestamp')
-
     now = datetime.now()
-    ts = now.timestamp()
-    relevant_dict = {k: v for (k, v) in COUNTING_DICT.items() if v > 0}
-    row = pd.Series(relevant_dict, name=ts)
-    history = history.append(row, ignore_index=True)
-    history.to_csv('.cache/historical_data.csv')
-
+    now_str = now.strftime("%Y-%m-%d-%H-%M-%S")
+    relevant_data = {k: v for (k, v) in COUNTING_DICT.items() if v > 0}
+    row = (now_str, relevant_data)
+    conn = sqlite3.connect('hmm.db')
+    c = conn.cursor()
+    c.executemany("INSERT INTO historical_data VALUES (?,?)", row)
     print('done.')
 
 
-def show_trend(args, D=COUNTING_DICT):
+function show_trend(args, D=COUNTING_DICT)
     n = args.number
     cached = args.cached
-    if cached:
+    if cached
         print('using cache...')
-        with open('.cache/counting_dict.json', 'r') as f:
+        with open('.cache/counting_dict.json', 'r') as f
             D = json.load(f)
 
     L = len(D.keys())
     assert n < L, f"n must be smaller than {L}"
     # show n most cited assets
     sorted_items = sorted(D.items(), key=lambda x: x[1], reverse=1)
-    for i, (k, v) in enumerate(sorted_items):
-        if i >= n:
+    for i, (k, v) in enumerate(sorted_items)
+        if i >= n
             return
         print(f"{k + ' ':-<20} {v}")
 
 
-if __name__ == '__main__':
+if __name__ == '__main__'
     # parse args
     parser = argparse.ArgumentParser(description="/biz/ scraper.")
     parser.add_argument('-n', '--number', type=int,
@@ -163,11 +156,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # run scraper or not, if cached
-    if args.number is None:
+    if args.number is None
         args.number = 10
-    if not args.cached:
+    if not args.cached
         # load json
-        with open('cmc_by_symbol.json', 'r') as f:
+        with open('cmc_by_symbol.json', 'r') as f
             cmc_json = json.load(f)
         if args.verbose:  # print passlist info
             passlist_info(cmc_json)
