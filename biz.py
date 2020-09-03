@@ -2,7 +2,6 @@
 
 from bs4 import BeautifulSoup
 import requests
-import sqlite3
 import json
 import html
 from string import punctuation
@@ -143,7 +142,12 @@ def show_trend(args, D=COUNTING_DICT):
         print('using cache...')
         df = pd.read_csv('.cache/historical_data.csv')
         raw_dict = df.tail(1).to_dict(orient='list')
-        D = {k: v[0] for (k, v) in raw_dict.items()}
+        # delete all NaNs while structuring dict
+        D = {k: v[0] for (k, v) in raw_dict.items() if pd.notna(v[0])}
+        # delete timestamp column
+        del D['timestamp']
+
+
 
     L = len(D.keys())
     assert n < L, f"n must be smaller than {L}"
@@ -175,10 +179,10 @@ if __name__ == '__main__':
     # run scraper or not, if cached
     if args.number is None:
         args.number = 10
+    # load json
+    with open('cmc_by_symbol.json', 'r') as f:
+        cmc_json = json.load(f)
     if not args.cached:
-        # load json
-        with open('cmc_by_symbol.json', 'r') as f:
-            cmc_json = json.load(f)
         if args.verbose:  # print passlist info
             passlist_info(cmc_json)
         init_dict(cmc_json)
