@@ -26,6 +26,8 @@ CLEAR_TRANS = str.maketrans(punctuation, ' ' * len(punctuation))
 # not be counted.
 passlist = {
             'A',
+            'S',
+            'AT',
             'IT',
             'THE',
             'YOU',
@@ -147,10 +149,15 @@ def show_trend(args, D=COUNTING_DICT):
     assert n < L, f"n must be smaller than {L}"
     # show n most cited assets
     sorted_items = sorted(D.items(), key=lambda x: x[1], reverse=1)
+    print("TOKEN (RANK) -------- N")
+    print("-----------------------")
     for i, (k, v) in enumerate(sorted_items):
         if i >= n:
             return
-        print(f"{k + ' ':-<20} {v}")
+        rank = cmc_json[k]['cmc_rank']
+        coin = f"{k:<7} ({rank})"
+        print(f"{coin:-<20} {v}")
+
 
 
 if __name__ == '__main__':
