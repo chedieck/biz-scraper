@@ -26,4 +26,4 @@ The symbol `BUY` and the symbol `BTC` will only be counted once for this post.
 
 Furthermore, as words like `BUY` and `THE` and `FOR` are usually not symbols (even though they exist on CMC), but regular words typed by someone with capslock turned on, the script starts with a `passlist` of "symbols" to be ignored. This can be manually edited, and the `-v` option can be used to see the relevance (CMC ranking) of the tokens being ignored.
 
-`-c` Option to use cached data, in order to avoid rescraping the data.
+All output from calls to the `biz.py` executable are savec at `$(pwd)/.cache/historical_data.csv`, and the `-c` option allow you to use the executable to vizualize the occurence counting without properly rescraping the website, but by using the last cached data instead.
