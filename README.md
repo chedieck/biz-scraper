@@ -14,6 +14,10 @@ optional arguments:
   -v, --verbose         print which assets are being ignored
   -c, --cached          used cached data
 ```
+
+To install dependencies:
+
+`pip3 install bs4 requests pandas`
 A simple scraper to count occurence of symbols that exist on CMC (Coinmarketcap) on /biz/. The listing `json` can be updated using a personal API key from CMC (which is not needed to perform the scraping on 4chan) using `update_cmc.py` with the API key written to a file named `api.key`.
 
 The algorithm counts symbol occurence for each post: in other words, if somebody posts:
