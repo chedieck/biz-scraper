@@ -1,1 +1,3 @@
 api.key
+.cache/historical_data.csv
+to_analyze.csv
