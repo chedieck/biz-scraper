@@ -47,20 +47,14 @@ passlist = {
 #################################################################
 
 
-def passlist_info(cmc_json):
-    for symb in passlist:
-        print(f"{symb:<7} ranked {cmc_json[symb]['cmc_rank']:<4} ignored...")
-
-
-def init_dict(cmc_json):
-    for symb in cmc_json.keys():
-        COUNTING_DICT[symb] = 0
-
 
 def count_word(word):
     clean_word = word.translate(CLEAR_TRANS).strip()
-    if clean_word in COUNTING_DICT and clean_word not in passlist:
-        COUNTING_DICT[clean_word] += 1
+    if clean_word not in passlist and clean_word.isupper():
+        if clean_word in COUNTING_DICT:
+            COUNTING_DICT[clean_word] += 1
+        else:
+            COUNTING_DICT[clean_word] = 1
 
 
 def parse_string(_string):
@@ -161,8 +155,7 @@ def show_trend(args, D=COUNTING_DICT):
     for i, (k, v) in enumerate(sorted_items):
         if i >= n:
             return
-        rank = cmc_json[k]['cmc_rank']
-        coin = f"{k:<7} ({rank})"
+        coin = f"{k:<7} "
         print(f"{coin:-<20} {v}")
 
 
@@ -182,13 +175,7 @@ if __name__ == '__main__':
     # run scraper or not, if cached
     if args.number is None:
         args.number = 10
-    # load json
-    with open('cmc_by_symbol.json', 'r') as f:
-        cmc_json = json.load(f)
     if not args.cached:
-        if args.verbose:  # print passlist info
-            passlist_info(cmc_json)
-        init_dict(cmc_json)
         # run scraping
         scrap_all()
 
