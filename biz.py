@@ -25,6 +25,9 @@ CLEAR_TRANS = str.maketrans(punctuation, ' ' * len(punctuation))
 # not be counted.
 passlist = {
             'A',
+            'I',
+            'IS',
+            'FUCK',
             'S',
             'AT',
             'IT',
@@ -32,11 +35,11 @@ passlist = {
             'YOU',
             'SENT',
             'LOL',
-            'BUY',
+#            'BUY',
             'FOR',
             'GET',
             'IQ',
-            'ATH',
+#            'ATH',
             'NOW',
             'ME',
             'UP',
