@@ -9,6 +9,7 @@ import argparse
 import threading
 import pandas as pd
 from datetime import datetime
+from tqdm import tqdm
 
 
 # It's not very pythonic to have functions
@@ -85,7 +86,7 @@ def scrap_all():
     soup = BeautifulSoup(page.content, 'html.parser')
 
     # get start of catalog json
-    js_catalog = soup.findAll('script')[2]
+    js_catalog = soup.findAll('script')[4]
     js_text = js_catalog.contents[0]
     catalog_var_start_id = js_text.find('catalog')
     catalog_var_trailing_noise = js_text[catalog_var_start_id:]
@@ -112,7 +113,7 @@ def scrap_all():
     for t in process_threads:
         t.start()
     print('waiting for responses...')
-    for t in process_threads:
+    for t in tqdm(process_threads):
         t.join()
 
     # save on db
